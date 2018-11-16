@@ -22,13 +22,13 @@ try:
         log.info("import MAX31855SPI")
         spi_reserved_gpio = [7, 8, 9, 10, 11]
         if config.gpio_air in spi_reserved_gpio:
-            raise Exception("gpio_air pin %s collides with SPI pins %s" % (config.gpio_air, spi_reserved_gpio))
+            raise Exception(f"gpio_air pin {config.gpio_air:s} collides with SPI pins {spi_reserved_gpio:s}")
         if config.gpio_cool in spi_reserved_gpio:
-            raise Exception("gpio_cool pin %s collides with SPI pins %s" % (config.gpio_cool, spi_reserved_gpio))
+            raise Exception(f"gpio_cool pin {config.gpio_cool:s} collides with SPI pins {spi_reserved_gpio:s}")
         if config.gpio_door in spi_reserved_gpio:
-            raise Exception("gpio_door pin %s collides with SPI pins %s" % (config.gpio_door, spi_reserved_gpio))
+            raise Exception(f"gpio_door pin {config.gpio_door:s} collides with SPI pins {spi_reserved_gpio:s}")
         if config.gpio_heat in spi_reserved_gpio:
-            raise Exception("gpio_heat pin %s collides with SPI pins %s" % (config.gpio_heat, spi_reserved_gpio))
+            raise Exception(f"gpio_heat pin {config.gpio_heat:s} collides with SPI pins {spi_reserved_gpio:s}")
     if config.max6675:
         from max6675 import MAX6675, MAX6675Error
         log.info("import MAX6675")
@@ -88,7 +88,7 @@ class Oven (threading.Thread):
         self.pid = PID(ki=config.pid_ki, kd=config.pid_kd, kp=config.pid_kp)
 
     def run_profile(self, profile):
-        log.info("Running profile %s" % profile.name)
+        log.info(f"Running profile {profile.name}")
         self.profile = profile
         self.totaltime = profile.get_duration()
         self.state = Oven.STATE_RUNNING
@@ -111,11 +111,11 @@ class Oven (threading.Thread):
                 else:
                     runtime_delta = datetime.datetime.now() - self.start_time
                     self.runtime = runtime_delta.total_seconds()
-                log.info("running at %.1f deg C (Target: %.1f) , heat %.2f, cool %.2f, air %.2f, door %s (%.1fs/%.0f)" % (self.temp_sensor.temperature, self.target, self.heat, self.cool, self.air, self.door, self.runtime, self.totaltime))
+                log.info(f"running at {self.temp_sensor.temperature:.1f} deg C (Target: {self.target:.1f}) , heat {self.heat:.2f}, cool {self.cool:.2f}, air {self.air:.2f}, door {self.door:s} ({self.runtime:.1f}s/{self.totaltime:.0f})")
                 self.target = self.profile.get_target_temperature(self.runtime)
                 pid = self.pid.compute(self.target, self.temp_sensor.temperature)
 
-                log.info("pid: %.3f" % pid)
+                log.info(f"pid: {pid:.3f}")
 
                 self.set_cool(pid <= -1)
                 if(pid > 0):
@@ -304,7 +304,7 @@ class TempSensorSimulate(TempSensor):
 
             #temperature change of oven by cooling to env
             t -= p_env * self.time_step / c_oven
-            log.debug("energy sim: -> %dW heater: %.0f -> %dW oven: %.0f -> %dW env" % (int(p_heat * self.oven.heat), t_h, int(p_ho), t, int(p_env)))
+            log.debug(f"energy sim: -> {(p_heat * self.oven.heat):.0f}W heater: {t_h:.0f} -> {p_ho:.0f}W oven: {t:.0f} -> {p_env:.0f}W env")
             self.temperature = t
 
             time.sleep(self.sleep_time)

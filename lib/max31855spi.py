@@ -16,7 +16,7 @@ class MAX31855SPI(object):
     def get(self):
         '''Reads SPI bus and returns current value of thermocouple.'''
         state = self.max31855.readState()
-        self.log.debug("status %s" % state)
+        self.log.debug(f"status {state:s}")
         if state['openCircuit']:
             raise MAX31855Error('Not Connected')
         elif state['shortGND']:

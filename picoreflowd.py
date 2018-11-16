@@ -43,7 +43,7 @@ def index():
 
 @app.route('/picoreflow/:filename#.*#')
 def send_static(filename):
-    log.debug("serving %s" % filename)
+    log.debug(f"serving {filename:s}")
     return bottle.static_file(filename, root=os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "public"))
 
 
@@ -62,7 +62,7 @@ def handle_control():
     while True:
         try:
             message = wsock.receive()
-            log.info("Received (control): %s" % message)
+            log.info(f"Received (control): {message:s}")
             msgdict = json.loads(message)
             if msgdict.get("cmd") == "RUN":
                 log.info("RUN command received")
@@ -100,7 +100,7 @@ def handle_storage():
             message = wsock.receive()
             if not message:
                 break
-            log.debug("websocket (storage) received: %s" % message)
+            log.debug(f"websocket (storage) received: {message:s}")
 
             try:
                 msgdict = json.loads(message)
@@ -127,7 +127,7 @@ def handle_storage():
                         msgdict["resp"] = "OK"
                     else:
                         msgdict["resp"] = "FAIL"
-                    log.debug("websocket (storage) sent: %s" % message)
+                    log.debug(f"websocket (storage) sent: {message:s}")
 
                     wsock.send(json.dumps(msgdict))
                     wsock.send(get_profiles())
@@ -157,7 +157,7 @@ def handle_status():
     while True:
         try:
             message = wsock.receive()
-            wsock.send("Your message was: %r" % message)
+            wsock.send(f"Your message was: {message:s}")
         except WebSocketError:
             break
     log.info("websocket (status) closed")
@@ -180,20 +180,21 @@ def save_profile(profile, force=False):
     filename = profile['name']+".json"
     filepath = os.path.join(profile_path, filename)
     if not force and os.path.exists(filepath):
-        log.error("Could not write, %s already exists" % filepath)
+        log.error(f"Could not write, {filepath:s} already exists")
         return False
     with open(filepath, 'w+') as f:
         f.write(profile_json)
         f.close()
-    log.info("Wrote %s" % filepath)
+    log.info(f"Wrote {filepath:s}")
     return True
+
 
 def delete_profile(profile):
     profile_json = json.dumps(profile)
     filename = profile['name']+".json"
     filepath = os.path.join(profile_path, filename)
     os.remove(filepath)
-    log.info("Deleted %s" % filepath)
+    log.info(f"Deleted {filepath:s}")
     return True
 
 
@@ -208,7 +209,7 @@ def get_config():
 def main():
     ip = config.listening_ip
     port = config.listening_port
-    log.info("listening on %s:%d" % (ip, port))
+    log.info(f"listening on {ip}:{port}")
 
     server = WSGIServer((ip, port), app,
                         handler_class=WebSocketHandler)

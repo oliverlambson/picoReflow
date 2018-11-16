@@ -162,7 +162,7 @@ if __name__ == "__main__":
                 except MAX31855Error as e:
                     tc = "Error: "+ e.value
                     running = False
-                print("tc: {} and rj: {}".format(tc, rj))
+                print(f"tc: {tc} and rj: {rj}")
             time.sleep(1)
         except KeyboardInterrupt:
             running = False
