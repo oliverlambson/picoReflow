@@ -1,5 +1,11 @@
-import threading,logging,json,time,datetime
+import threading # only use threading.Thread
+import logging # only use logging.getLogger
+import json # only use json.dumps
+import time # only use time.sleep
+import datetime # only use datetime.datetime.now
+
 from oven import Oven
+
 log = logging.getLogger(__name__)
 
 class OvenWatcher(threading.Thread):
@@ -9,7 +15,7 @@ class OvenWatcher(threading.Thread):
         self.started = None
         self.recording = False
         self.observers = []
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self) # supposed to call first
         self.daemon = True
         self.log_skip_counter = 0
 

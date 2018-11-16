@@ -6,8 +6,8 @@ import logging
 import json
 
 import bottle
-import gevent
-import geventwebsocket
+import gevent # unused
+import geventwebsocket # unused
 from gevent.pywsgi import WSGIServer
 from geventwebsocket.handler import WebSocketHandler
 

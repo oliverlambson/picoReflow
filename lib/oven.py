@@ -1,9 +1,9 @@
-import threading
-import time
-import random
-import datetime
-import logging
-import json
+import threading # only use threading.Thread
+import time # only use time.sleep
+import random # unused
+import datetime # only use datetime.datetime
+import logging # only use logging.getLogger
+import json # only use json.loads
 
 import config
 
