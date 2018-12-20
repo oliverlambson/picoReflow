@@ -99,7 +99,7 @@ class Oven (threading.Thread):
         self.reset()
 
     def run(self):
-        temperature_count = 0
+        temperature_time = 0
         last_temp = 0
         pid = 0
         while True:
@@ -118,27 +118,27 @@ class Oven (threading.Thread):
                 log.info(f"pid: {pid:.3f}")
 
                 self.set_cool(pid <= -1)
-                if(pid > 0):
-                    # The temp should be changing with the heat on
-                    # Count the number of time_steps encountered with no change and the heat on
+
+                if (pid >= 1):
+                    # The temp should be changing with the heat on, therefore
+                    # monitor duration heat has been on full power.
+                    # If the heat has been on full for [30] seconds and nothing
+                    # is changing, reset.
+                    # This prevents runaway in the event of sensor read failure.
+                    # Note: the PID parameter will first have to reach 1 before
+                    # a sensor failure will be identified.
                     if last_temp == self.temp_sensor.temperature:
-                        temperature_count += 1
+                        if (self.runtime - temperature_time) >= 30:
+                            log.info("Error reading sensor, oven temp not responding to heat.")
+                            self.reset()
                     else:
-                        temperature_count = 0
-                    # If the heat is on and nothing is changing, reset
-                    # The direction or amount of change does not matter
-                    # This prevents runaway in the event of a sensor read failure                   
-                    if temperature_count > 20:
-                        log.info("Error reading sensor, oven temp not responding to heat.")
-                        self.reset()
-                else:
-                    temperature_count = 0
-                    
+                        temperature_time = self.runtime
+
                 #Capture the last temperature value.  This must be done before set_heat, since there is a sleep in there now.
                 last_temp = self.temp_sensor.temperature
-                
+
                 self.set_heat(pid)
-                
+
                 #if self.profile.is_rising(self.runtime):
                 #    self.set_cool(False)
                 #    self.set_heat(self.temp_sensor.temperature < self.target)
