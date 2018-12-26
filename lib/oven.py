@@ -397,12 +397,14 @@ class Profile():
 
 class PID():
     def __init__(self, ki=1, kp=1, kd=1):
-        self.ki = ki
         self.kp = kp
-        self.kd = kd
+        self.ki = ki # ki = kp*dt/Ti
+        self.kd = kd # kd = kp*Td/dt
         self.lastNow = datetime.datetime.now()
-        self.iterm = 0
-        self.lastErr = 0
+        self.errorprev = 0
+        self.errorprevprev = 0
+        self.outputprev = 0
+        self.non_dim_fact = 10 # factor to divide error [deg C] by
 
     def compute(self, setpoint, ispoint, simulate=False):
         if simulate:
@@ -412,13 +414,19 @@ class PID():
         timeDelta = (now - self.lastNow).total_seconds()
 
         error = float(setpoint - ispoint)
-        self.iterm += (error * timeDelta * self.ki)
-        self.iterm = sorted([-1, self.iterm, 1])[1]
-        dErr = (error - self.lastErr) / timeDelta
+        error = error/self.non_dim_fact
 
-        output = self.kp * error + self.iterm + self.kd * dErr
+        # discrete PID implementation
+        C1 = self.kp*(error - self.errorprev) # P
+        C2 = self.ki * 0.5 * timeDelta * (error + 2*errorprev + errorprevprev)
+        C3 = self.kd * (2/timeDelta) * (error - 2*errorprev + errorprevprev)
+        output = self.outputprev + C1 + C2 + C3
         output = sorted([-1, output, 1])[1]
-        self.lastErr = error
+
+        log.info("C1 = %.1f\tC2 = %.1f\tC3 = %.1f\toutput = %.1f" % (C1, C2, C3, output))
+        self.outputprev = output
+        self.errorprev = error
+        self.errorprevprev = self.errorprev
         self.lastNow = now
 
         return output
