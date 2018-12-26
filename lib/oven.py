@@ -251,11 +251,40 @@ class TempSensorReal(TempSensor):
             self.thermocouple = MAX31855SPI(spi_dev=SPI.SpiDev(port=0, device=config.spi_sensor_chip_id))
 
     def run(self):
+        # init previous temp
+        from collections import deque
+        temps = deque([])
+        for i in range(3):
+            temps.append(self.thermocouple.get())
+        good_reading = (temps.count(temps[0]) != len(temps))
+        while (not good_reading) and (i < 10):
+            # checks if all list elements equal
+            log.info("Suspect thermocouple reading...re-reading.")
+            temps.append(self.thermocouple.get())
+            temps.popleft()
+            i += 1
+            good_reading = (temps.count(temps[0]) != len(temps))
+            time.sleep(0.01)
+        temp_prev = temps[-1]
+        log.info(f"Starting temp: {temp_prev:.1f} deg C")
+
         while True:
             try:
-                self.temperature = self.thermocouple.get()
+                temp_new = self.thermocouple.get()
+                good_reading = (abs(temp_new - temp_prev) <= 5)
+                while (not good_reading) and (i < 3):
+                    log.info("Suspect thermocouple reading...re-reading.")
+                    time.sleep(0.01)
+                    temp_new = self.thermocouple.get()
+                    log.info(f"New temp: {temp_new:.1f} deg C, Previous temp: {temp_prev:.1f} deg C")
+                    good_reading = (abs(temp_new - temp_prev) <= 2)
+                if good_reading:
+                    self.temperature = temp_new
+                else:
+                    log.info("No good reading found, keeping previous reading.")
+
             except Exception:
-                log.exception("problem reading temp")
+                log.exception("Problem reading temp")
             time.sleep(self.time_step)
 
 
