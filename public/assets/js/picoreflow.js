@@ -5,7 +5,7 @@ var points = [];
 var profiles = [];
 var time_mode = 0;
 var selected_profile = 0;
-var selected_profile_name = 'leadfree';
+var selected_profile_name = 'step_input'; // default profile
 var temp_scale = "c";
 var time_scale_slope = "s";
 var time_scale_profile = "s";
@@ -134,15 +134,15 @@ function updateProfileTable()
             var fields = id.split("-");
             var col = parseInt(fields[1]);
             var row = parseInt(fields[2]);
-            
+
             if (graph.profile.data.length > 0) {
             if (col == 0) {
-                graph.profile.data[row][col] = timeProfileFormatter(value,false);   
+                graph.profile.data[row][col] = timeProfileFormatter(value,false);
             }
             else {
                 graph.profile.data[row][col] = value;
             }
-            
+
             graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
             }
             updateProfileTable();
@@ -157,7 +157,7 @@ function timeProfileFormatter(val, down) {
             if (down) {rval = val / 60;} else {rval = val * 60;}
             break;
         case "h":
-            if (down) {rval = val / 3600;} else {rval = val * 3600;} 
+            if (down) {rval = val / 3600;} else {rval = val * 3600;}
             break;
     }
     return Math.round(rval);
@@ -166,7 +166,7 @@ function timeProfileFormatter(val, down) {
 function formatDPS(val) {
     var tval = val;
     if (time_scale_slope == "m") {
-        tval = val * 60;    
+        tval = val * 60;
     }
     if (time_scale_slope == "h") {
         tval = (val * 60) * 60;
@@ -177,7 +177,7 @@ function formatDPS(val) {
 function hazardTemp(){
     if (temp_scale == "f") {
         return (45 * 9 / 5) + 32
-    } 
+    }
     else {
         return 45
     }
@@ -552,7 +552,7 @@ $(document).ready(function()
                 }
 
                 $('#act_temp').html(parseInt(x.temperature));
-                
+
                 if (x.heat > 0.5) { $('#heat').addClass("ds-led-heat-active"); } else { $('#heat').removeClass("ds-led-heat-active"); }
                 if (x.cool > 0.5) { $('#cool').addClass("ds-led-cool-active"); } else { $('#cool').removeClass("ds-led-cool-active"); }
                 if (x.air > 0.5) { $('#air').addClass("ds-led-air-active"); } else { $('#air').removeClass("ds-led-air-active"); }
@@ -565,7 +565,7 @@ $(document).ready(function()
         };
 
         // Config Socket /////////////////////////////////
-        
+
         ws_config.onopen = function()
         {
             ws_config.send('GET');
@@ -580,9 +580,9 @@ $(document).ready(function()
             time_scale_profile = x.time_scale_profile;
             kwh_rate = x.kwh_rate;
             currency_type = x.currency_type;
-            
+
             if (temp_scale == "c") {temp_scale_display = "C";} else {temp_scale_display = "F";}
-              
+
 
             $('#act_temp_scale').html('º'+temp_scale_display);
             $('#target_temp_scale').html('º'+temp_scale_display);
@@ -598,7 +598,7 @@ $(document).ready(function()
                     time_scale_long = "Hours";
                     break;
             }
-            
+
         }
 
         // Control Socket ////////////////////////////////
@@ -658,12 +658,12 @@ $(document).ready(function()
             // if not, update with first available profile name
             var valid_profile_names = profiles.map(function(a) {return a.name;});
             if (
-              valid_profile_names.length > 0 && 
+              valid_profile_names.length > 0 &&
               $.inArray(selected_profile_name, valid_profile_names) === -1
             ) {
               selected_profile = 0;
               selected_profile_name = valid_profile_names[0];
-            }            
+            }
 
             // fill select with new options from websocket
             for (var i=0; i<profiles.length; i++)
