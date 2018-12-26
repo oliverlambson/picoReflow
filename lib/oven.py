@@ -254,37 +254,48 @@ class TempSensorReal(TempSensor):
             self.thermocouple = MAX31855SPI(spi_dev=SPI.SpiDev(port=0, device=config.spi_sensor_chip_id))
 
     def run(self):
+        """
+        NB: there is no safety implementation in this method for a failed
+        sensor. The error checking merely tries to evaluate if the reading
+        makes sense, if it doesn't -- it will still return the new reading.
+        """
         # init previous temp
         from collections import deque
         temps = deque([])
         for i in range(3):
             temps.append(self.thermocouple.get())
-        good_reading = (temps.count(temps[0]) != len(temps))
+            time.sleep(0.01)
+        good_reading = (temps[0] == temps[1] == temps[2])
+        i = 0
         while (not good_reading) and (i < 10):
             # checks if all list elements equal
-            log.info("Suspect thermocouple reading...re-reading.")
+            log.info("Suspect initial thermocouple reading -- re-reading.")
+            log.info(f"\ttemps: {temps}")
             temps.append(self.thermocouple.get())
             temps.popleft()
             i += 1
-            good_reading = (temps.count(temps[0]) != len(temps))
+            good_reading = (temps[0] == temps[1] == temps[2])
             time.sleep(0.01)
         temp_prev = temps[-1]
+        self.temperature = temp_prev
         log.info(f"Starting temp: {temp_prev:.1f} deg C")
 
         while True:
             try:
                 temp_new = self.thermocouple.get()
-                good_reading = (abs(temp_new - temp_prev) <= 5)
-                while (not good_reading) and (i < 3):
+                good_reading = (abs(temp_new - temp_prev) <= 2)
+                i = 0
+                while (not good_reading) and (i < 5):
                     log.info("Suspect thermocouple reading...re-reading.")
                     time.sleep(0.01)
                     temp_new = self.thermocouple.get()
                     log.info(f"New temp: {temp_new:.1f} deg C, Previous temp: {temp_prev:.1f} deg C")
                     good_reading = (abs(temp_new - temp_prev) <= 2)
-                if good_reading:
-                    self.temperature = temp_new
-                else:
-                    log.info("No good reading found, keeping previous reading.")
+                    i += 1
+                if not good_reading:
+                    log.info("No good reading found, using new reading.")
+                temp_prev = self.temperature
+                self.temperature = temp_new
 
             except Exception:
                 log.exception("Problem reading temp")
