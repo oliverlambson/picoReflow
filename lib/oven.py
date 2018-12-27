@@ -400,26 +400,26 @@ class PID():
         self.kp = kp
         self.ki = ki # ki = kp*dt/Ti
         self.kd = kd # kd = kp*Td/dt
-        self.lastNow = datetime.datetime.now()
+        self.last_now = datetime.datetime.now()
         self.errorprev = 0
         self.errorprevprev = 0
         self.outputprev = 0
-        self.non_dim_fact = 10 # factor to divide error [deg C] by
+        self.non_dim_fact = 10 # [deg C] for 100% duty cycle
 
     def compute(self, setpoint, ispoint, simulate=False):
         if simulate:
-            now = self.lastNow + datetime.timedelta(seconds=0.5)
+            now = self.last_now + datetime.timedelta(seconds=0.5)
         else:
             now = datetime.datetime.now()
-        timeDelta = (now - self.lastNow).total_seconds()
+        timeDelta = (now - self.last_now).total_seconds()
 
         error = float(setpoint - ispoint)
-        error = error/self.non_dim_fact
+        error = error/self.non_dim_fact # non-dimensionalise
 
         # discrete PID implementation
         C1 = self.kp*(error - self.errorprev) # P
-        C2 = self.ki * 0.5 * timeDelta * (error + 2*errorprev + errorprevprev)
-        C3 = self.kd * (2/timeDelta) * (error - 2*errorprev + errorprevprev)
+        C2 = self.ki * 0.5 * timeDelta * (error + 2*self.errorprev + self.errorprevprev)
+        C3 = self.kd * (2/timeDelta) * (error - 2*self.errorprev + self.errorprevprev)
         output = self.outputprev + C1 + C2 + C3
         output = sorted([-1, output, 1])[1]
 
