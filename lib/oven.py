@@ -420,7 +420,7 @@ class PID():
         C2 = self.ki * 0.5 * timeDelta * (error + 2*self.errorprev + self.errorprevprev)
         C3 = self.kd * (2/timeDelta) * (error - 2*self.errorprev + self.errorprevprev)
         output = self.outputprev + C1 + C2 + C3
-        output = sorted([-1, output, 1])[1]
+        output = sorted([0, output, 1])[1]
 
         log.info("C1 = %.1f\tC2 = %.1f\tC3 = %.1f\toutput = %.1f" % (C1, C2, C3, output))
         self.outputprev = output
