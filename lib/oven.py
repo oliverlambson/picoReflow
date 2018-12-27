@@ -422,7 +422,7 @@ class PID():
         output = self.outputprev + C1 + C2 + C3
         output = sorted([0, output, 1])[1]
 
-        log.info("C1 = %.1f\tC2 = %.1f\tC3 = %.1f\toutput = %.1f" % (C1, C2, C3, output))
+        log.info(f"C1 = {C1:.3f}\tC2 = {C2:.3f}\tC3 = {C3:.3f}\toutput = {output:.3f}")
         self.outputprev = output
         self.errorprev = error
         self.errorprevprev = self.errorprev
