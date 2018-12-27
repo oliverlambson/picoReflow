@@ -119,7 +119,7 @@ class Oven (threading.Thread):
 
                 self.set_cool(pid <= -1)
 
-                if (pid >= 1):
+                if (pid >= 1) and (last_temp == self.temp_sensor.temperature):
                     # The temp should be changing with the heat on, therefore
                     # monitor duration heat has been on full power.
                     # If the heat has been on full for [30] seconds and nothing
@@ -127,12 +127,11 @@ class Oven (threading.Thread):
                     # This prevents runaway in the event of sensor read failure.
                     # Note: the PID parameter will first have to reach 1 before
                     # a sensor failure will be identified.
-                    if last_temp == self.temp_sensor.temperature:
-                        if (self.runtime - temperature_time) >= 30:
-                            log.info("Error reading sensor, oven temp not responding to heat.")
-                            self.reset()
-                    else:
-                        temperature_time = self.runtime
+                    if (self.runtime - temperature_time) >= 30:
+                        log.info("Error reading sensor, oven temp not responding to heat.")
+                        self.reset()
+                else:
+                    temperature_time = self.runtime
 
                 #Capture the last temperature value.  This must be done before set_heat, since there is a sleep in there now.
                 last_temp = self.temp_sensor.temperature
