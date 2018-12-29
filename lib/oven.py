@@ -285,14 +285,14 @@ class TempSensorReal(TempSensor):
         while True:
             try:
                 temp_new = self.thermocouple.get()
-                good_reading = (abs(temp_new - temp_prev) <= 2)
+                good_reading = (abs(temp_new - temp_prev) <= 3)
                 i = 0
                 while (not good_reading) and (i < 5):
                     log.info("Suspect thermocouple reading...re-reading.")
                     time.sleep(0.01)
                     temp_new = self.thermocouple.get()
                     log.info(f"New temp: {temp_new:.1f} deg C, Previous temp: {temp_prev:.1f} deg C")
-                    good_reading = (abs(temp_new - temp_prev) <= 2)
+                    good_reading = (abs(temp_new - temp_prev) <= 3)
                     i += 1
                 if not good_reading:
                     log.info("No good reading found, using new reading.")
