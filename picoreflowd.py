@@ -172,6 +172,7 @@ def get_profiles():
     for filename in profile_files:
         with open(os.path.join(profile_path, filename), 'r') as f:
             profiles.append(json.load(f))
+    profiles = sorted(profiles, key=lambda k: k['name'])
     return json.dumps(profiles)
 
 
