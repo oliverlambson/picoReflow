@@ -403,10 +403,12 @@ class PID():
         self.ki = ki # ki = kp*dt/Ti
         self.kd = kd # kd = kp*Td/dt
         self.last_now = datetime.datetime.now()
-        self.errorprev = 0
-        self.errorprevprev = 0
-        self.outputprev = 0
+        self.error_1p = 0
+        self.error_2p = 0
+        self.output_1p = 0
+        self.output_2p = 0
         self.non_dim_fact = 10 # [deg C] for 100% duty cycle
+        self.start_counter = 0
 
     def compute(self, setpoint, ispoint, simulate=False):
         if simulate:
@@ -416,19 +418,29 @@ class PID():
         timeDelta = (now - self.last_now).total_seconds()
 
         error = float(setpoint - ispoint)
+        log.info(f"err: {error:.1f} deg C")
         error = error/self.non_dim_fact # non-dimensionalise
 
+
         # discrete PID implementation
-        C1 = self.kp*(error - self.errorprev) # P
-        C2 = self.ki * 0.5 * timeDelta * (error + 2*self.errorprev + self.errorprevprev)
-        C3 = self.kd * (2/timeDelta) * (error - 2*self.errorprev + self.errorprevprev)
-        output = self.outputprev + C1 + C2 + C3
+        C1 = self.kp * (error - self.error_2p) # P
+        C2 = self.ki * 0.5 * timeDelta * (error + 2*self.error_1p + self.error_2p)
+        C3 = self.kd * (2/timeDelta) * (error - 2*self.error_1p + self.error_2p)
+
+        # prevent startup error
+        if self.start_counter < 2:
+            # C2 = 0
+            C3 = 0
+            self.start_counter += 1
+
+        output = self.output_2p + C1 + C2 + C3
         output = sorted([0, output, 1])[1]
 
         log.info(f"C1 = {C1:.3f}\tC2 = {C2:.3f}\tC3 = {C3:.3f}\toutput = {output:.3f}")
-        self.outputprev = output
-        self.errorprev = error
-        self.errorprevprev = self.errorprev
+        self.output_2p = self.output_1p
+        self.output_1p = output
+        self.error_2p = self.error_1p
+        self.error_1p = error
         self.lastNow = now
 
         return output
