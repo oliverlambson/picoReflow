@@ -213,13 +213,18 @@ def get_config():
 
 
 def main():
-    ip = config.listening_ip
-    port = config.listening_port
-    log.info(f"listening on {ip}:{port}")
+    try:
+        ip = config.listening_ip
+        port = config.listening_port
+        log.info(f"listening on {ip}:{port}")
 
-    server = WSGIServer((ip, port), app,
-                        handler_class=WebSocketHandler)
-    server.serve_forever()
+        server = WSGIServer((ip, port), app,
+                            handler_class=WebSocketHandler)
+        server.serve_forever()
+    except KeyboardInterrupt:
+        oven.abort_run()
+        log.info("Main loop exit")
+        exit()
 
 
 if __name__ == "__main__":
