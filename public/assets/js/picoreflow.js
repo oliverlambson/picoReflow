@@ -1,11 +1,11 @@
 var state = "IDLE";
 var state_last = "";
-var graph = [ 'profile', 'live'];
+var graph = [ 'profile', 'live', 'ctrl'];
 var points = [];
 var profiles = [];
 var time_mode = 0;
 var selected_profile = 0;
-var selected_profile_name = 'step_input'; // default profile
+var selected_profile_name = "step_input"; // default profile
 var temp_scale = "c";
 var time_scale_slope = "s";
 var time_scale_profile = "s";
@@ -41,6 +41,15 @@ graph.live =
     draggable: false
 };
 
+graph.ctrl =
+{
+    label: "Ctrl",
+    data: [],
+    points: { show: false },
+    color: "#ffa500",
+    draggable: false
+};
+
 
 function updateProfile(id)
 {
@@ -54,7 +63,7 @@ function updateProfile(id)
     $('#sel_prof_eta').html(job_time);
     $('#sel_prof_cost').html(kwh + ' kWh ('+ currency_type +': '+ cost +')');
     graph.profile.data = profiles[id].data;
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ] , getOptions());
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ] , getOptions());
 }
 
 function deleteProfile()
@@ -79,7 +88,7 @@ function deleteProfile()
     $('#e2').select2('val', 0);
     graph.profile.points.show = false;
     graph.profile.draggable = false;
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ], getOptions());
 }
 
 
@@ -143,7 +152,7 @@ function updateProfileTable()
                 graph.profile.data[row][col] = value;
             }
 
-            graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
+            graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ], getOptions());
             }
             updateProfileTable();
 
@@ -211,7 +220,8 @@ function runTask()
     }
 
     graph.live.data = [];
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ] , getOptions());
+    graph.ctrl.data = [];
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ] , getOptions());
 
     ws_control.send(JSON.stringify(cmd));
 
@@ -226,7 +236,8 @@ function runTaskSimulation()
     }
 
     graph.live.data = [];
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ] , getOptions());
+    graph.ctrl.data = [];
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ] , getOptions());
 
     ws_control.send(JSON.stringify(cmd));
 
@@ -251,7 +262,7 @@ function enterNewMode()
     graph.profile.points.show = true;
     graph.profile.draggable = true;
     graph.profile.data = [];
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ], getOptions());
     updateProfileTable();
 }
 
@@ -266,7 +277,7 @@ function enterEditMode()
     $('#form_profile_name').val(profiles[selected_profile].name);
     graph.profile.points.show = true;
     graph.profile.draggable = true;
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ], getOptions());
     updateProfileTable();
 }
 
@@ -282,7 +293,7 @@ function leaveEditMode()
     $('#profile_table').slideUp();
     graph.profile.points.show = false;
     graph.profile.draggable = false;
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ], getOptions());
 }
 
 function newPoint()
@@ -296,14 +307,14 @@ function newPoint()
         var pointx = 0;
     }
     graph.profile.data.push([pointx, Math.floor((Math.random()*230)+25)]);
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ], getOptions());
     updateProfileTable();
 }
 
 function delPoint()
 {
     graph.profile.data.splice(-1,1)
-    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ], getOptions());
+    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ], getOptions());
     updateProfileTable();
 }
 
@@ -427,7 +438,11 @@ function getOptions()
 
     legend:
     {
-      show: false
+      // show: false
+      show: true,
+      position: "se",
+      backgroundColor: "black",
+      backgroundOpacity: 0.25
     }
   }
 
@@ -500,7 +515,8 @@ $(document).ready(function()
 
                 $.each(x.log, function(i,v) {
                     graph.live.data.push([v.runtime, v.temperature]);
-                    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ] , getOptions());
+                    graph.ctrl.data.push([v.runtime, v.ctrl]);
+                    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ] , getOptions());
                 });
             }
 
@@ -533,7 +549,8 @@ $(document).ready(function()
                     $("#nav_stop").show();
 
                     graph.live.data.push([x.runtime, x.temperature]);
-                    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ] , getOptions());
+                    graph.ctrl.data.push([x.runtime, x.ctrl]);
+                    graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ] , getOptions());
 
                     left = parseInt(x.totaltime-x.runtime);
                     eta = new Date(left * 1000).toISOString().substr(11, 8);
@@ -614,7 +631,8 @@ $(document).ready(function()
             console.log (e.data);
             x = JSON.parse(e.data);
             graph.live.data.push([x.runtime, x.temperature]);
-            graph.plot = $.plot("#graph_container", [ graph.profile, graph.live ] , getOptions());
+            graph.ctrl.data.push([x.runtime, x.ctrl]);
+            graph.plot = $.plot("#graph_container", [ graph.profile, graph.live, graph.ctrl ] , getOptions());
 
         }
 

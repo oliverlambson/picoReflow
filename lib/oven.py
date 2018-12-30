@@ -86,6 +86,7 @@ class Oven (threading.Thread):
         self.set_cool(False)
         self.set_air(False)
         self.pid = PID(ki=config.pid_ki, kd=config.pid_kd, kp=config.pid_kp)
+        self.ctrl = 0
 
     def run_profile(self, profile):
         log.info(f"Running profile {profile.name}")
@@ -117,6 +118,7 @@ class Oven (threading.Thread):
                 log.info(f"running at {self.temp_sensor.temperature:.1f} deg C (Target: {self.target:.1f}) , heat {self.heat:.2f}, cool {self.cool:.2f}, air {self.air:.2f}, door {self.door:s} ({self.runtime:.1f}s/{self.totaltime:.0f})")
 
                 pid = self.pid.compute(self.target, self.temp_sensor.temperature, self.simulate)
+                self.ctrl = pid*100 # PID value from 0-100
 
                 log.info(f"pid: {pid:.3f}")
 
@@ -215,7 +217,8 @@ class Oven (threading.Thread):
             'cool': self.cool,
             'air': self.air,
             'totaltime': self.totaltime,
-            'door': self.door
+            'door': self.door,
+            'ctrl': self.ctrl
         }
         return state
 
