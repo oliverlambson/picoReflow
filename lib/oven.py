@@ -424,7 +424,6 @@ class PID():
         log.info(f"err: {error:.1f} deg C")
         error = error/self.non_dim_fact # non-dimensionalise
 
-
         # discrete PID implementation
         C1 = self.kp * (error - self.error_2p) # P
         C2 = self.ki * 0.5 * timeDelta * (error + 2*self.error_1p + self.error_2p)
@@ -432,14 +431,16 @@ class PID():
 
         # prevent startup error
         if self.start_counter < 2:
-            # C2 = 0
+            C2 = 0
             C3 = 0
             self.start_counter += 1
 
         output = self.output_2p + C1 + C2 + C3
-        output = sorted([0, output, 1])[1]
 
         log.info(f"C1 = {C1:.3f}\tC2 = {C2:.3f}\tC3 = {C3:.3f}\toutput = {output:.3f}")
+
+        output = sorted([0, output, 1])[1] # prevent windup (saturate output)
+
         self.output_2p = self.output_1p
         self.output_1p = output
         self.error_2p = self.error_1p
