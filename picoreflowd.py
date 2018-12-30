@@ -47,6 +47,11 @@ def send_static(filename):
     return bottle.static_file(filename, root=os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "public"))
 
 
+@app.route('/favicon.ico', method='GET')
+def get_favicon():
+    return send_static('assets/images/favicon.png')
+
+
 def get_websocket_from_request():
     env = bottle.request.environ
     wsock = env.get('wsgi.websocket')
