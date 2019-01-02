@@ -85,7 +85,7 @@ class Oven (threading.Thread):
         self.set_heat(False)
         self.set_cool(False)
         self.set_air(False)
-        self.pid = PID(ki=config.pid_ki, kd=config.pid_kd, kp=config.pid_kp)
+        self.pid = PID(ki=config.pid_ki, kd=config.pid_kd, kp=config.pid_kp, alpha=config.pid_alpha, ramp_in=config.pid_ramp_in, non_dim_fact=config.pid_non_dim_fact)
         self.ctrl = 0
 
     def run_profile(self, profile):
@@ -402,50 +402,61 @@ class Profile():
 
 
 class PID():
-    def __init__(self, ki=1, kp=1, kd=1):
+    def __init__(self, ki=1, kp=1, kd=1, alpha=0, ramp_in=0, non_dim_fact=1):
         self.kp = kp
-        self.ki = ki # ki = kp*dt/Ti
-        self.kd = kd # kd = kp*Td/dt
-        self.last_now = datetime.datetime.now()
-        self.error_1p = 0
-        self.error_2p = 0
-        self.output_1p = 0
-        self.output_2p = 0
-        self.non_dim_fact = 10 # [deg C] for 100% duty cycle
+        self.ki = ki
+        self.kd = kd
+        self.now_p = datetime.datetime.now()
+        self.p_term = 0
+        self.i_term = 0
+        self.d_term = 0
+        self.error_p = 0
+        self.output_p = 0
+        self.non_dim_fact = non_dim_fact
         self.start_counter = 0
+        self.ALPHA = alpha
+        self.SM = self.ALPHA
+        self.RAMP_IN = ramp_in
+        self.err_sm_p = 0
 
     def compute(self, setpoint, ispoint, simulate=False):
         if simulate:
-            now = self.last_now + datetime.timedelta(seconds=0.5)
+            now = self.now_p + datetime.timedelta(seconds=config.sensor_time_wait)
         else:
             now = datetime.datetime.now()
-        timeDelta = (now - self.last_now).total_seconds()
+        timeDelta = (now - self.now_p).total_seconds()
 
         error = float(setpoint - ispoint)
         log.info(f"err: {error:.1f} deg C")
         error = error/self.non_dim_fact # non-dimensionalise
 
-        # discrete PID implementation
-        C1 = self.kp * (error - self.error_2p) # P
-        C2 = self.ki * 0.5 * timeDelta * (error + 2*self.error_1p + self.error_2p)
-        C3 = self.kd * (2/timeDelta) * (error - 2*self.error_1p + self.error_2p)
+        # PID implementation
+        # make initial derivative less sensitive to noise
+        if self.start_counter < self.RAMP_IN:
+            self.SM = ((self.start_counter+1)/self.RAMP_IN)*self.ALPHA
+        # exponential filter for derivative
+        err_sm = self.SM*error + (1-self.SM)*self.err_sm_p
+        if self.start_counter >= 1:
+            dErr = (err_sm - self.err_sm_p) / timeDelta
+        else:
+            dErr = 0
+        self.err_sm_p = err_sm
+        self.start_counter += 1
 
-        # prevent startup error
-        if self.start_counter < 2:
-            C2 = 0
-            C3 = 0
-            self.start_counter += 1
+        self.p_term = self.kp * error
+        if (0 <= self.output_p < 1): # prevent windup
+            self.i_term += error * timeDelta * self.ki
+        else:
+            self.i_term = 0
+        self.d_term = self.kd * dErr
 
-        output = self.output_2p + C1 + C2 + C3
+        output = self.p_term + self.i_term + self.d_term
 
-        log.info(f"C1 = {C1:.3f}\tC2 = {C2:.3f}\tC3 = {C3:.3f}\toutput = {output:.3f}")
+        log.info(f"p = {self.p_term:.3f}\ti = {self.i_term:.3f}\td = {self.d_term:.3f}\toutput = {output:.3f}")
 
-        output = sorted([0, output, 1])[1] # prevent windup (saturate output)
-
-        self.output_2p = self.output_1p
-        self.output_1p = output
-        self.error_2p = self.error_1p
-        self.error_1p = error
-        self.lastNow = now
+        output = sorted([0, output, 1])[1]
+        self.error_p = error
+        self.now_p = now
+        self.output_p = output
 
         return output

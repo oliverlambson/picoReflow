@@ -64,6 +64,9 @@ sensor_dT_limit = 0.5 # max temp. change between readings (bad reading criteria)
 pid_ki = 0.1  # Integration
 pid_kd = 0.4  # Derivative
 pid_kp = 0.5  # Proportional
+pid_alpha = 0.4 # Exponential filter smoothing factor (for derivative smoothing)
+pid_ramp_in = 6 # Number of samples to ramp exponential filter in
+pid_non_dim_fact = 1 # Non-dimensionalisation factor to divite error by
 
 
 ########################################################################
