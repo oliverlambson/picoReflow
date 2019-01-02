@@ -53,6 +53,8 @@ spi_sensor_chip_id = 0
 
 ### amount of time, in seconds, to wait between reads of the thermocouple
 sensor_time_wait = .5
+sensor_retry_time = 0.01 # wait time between reading retries (if reading bad)
+sensor_dT_limit = 0.5 # max temp. change between readings (bad reading criteria)
 
 
 ########################################################################
@@ -82,7 +84,6 @@ sim_R_ho_air   = 0.05   # K/W  " with internal air circulation
 #
 #   Time and Temperature parameters
 
-temp_scale          = "c" # c = Celsius | f = Fahrenheit - Unit to display 
+temp_scale          = "c" # c = Celsius | f = Fahrenheit - Unit to display
 time_scale_slope    = "s" # s = Seconds | m = Minutes | h = Hours - Slope displayed in temp_scale per time_scale_slope
 time_scale_profile  = "s" # s = Seconds | m = Minutes | h = Hours - Enter and view target time in time_scale_profile
-

@@ -57,7 +57,7 @@ class Oven (threading.Thread):
     STATE_IDLE = "IDLE"
     STATE_RUNNING = "RUNNING"
 
-    def __init__(self, simulate=False, time_step=config.sensor_time_wait):
+    def __init__(self, simulate=False, time_step=config.sensor_time_wait, retry_time=config.sensor_retry_time, dT_limit=config.sensor_dT_limit):
         threading.Thread.__init__(self)
         self.daemon = True
         self.simulate = simulate
@@ -66,7 +66,7 @@ class Oven (threading.Thread):
         if simulate:
             self.temp_sensor = TempSensorSimulate(self, 0.5, self.time_step)
         if sensor_available:
-            self.temp_sensor = TempSensorReal(self.time_step)
+            self.temp_sensor = TempSensorReal(self.time_step, retry_time, dT_limit)
         else:
             self.temp_sensor = TempSensorSimulate(self,
                                                   self.time_step,
@@ -238,8 +238,10 @@ class TempSensor(threading.Thread):
 
 
 class TempSensorReal(TempSensor):
-    def __init__(self, time_step):
+    def __init__(self, time_step, retry_time, dT_limit):
         TempSensor.__init__(self, time_step)
+        self.retry_time = retry_time
+        self.dT_limit = dT_limit
         if config.max6675:
             log.info("init MAX6675")
             self.thermocouple = MAX6675(config.gpio_sensor_cs,
@@ -269,7 +271,7 @@ class TempSensorReal(TempSensor):
         temps = deque([])
         for i in range(3):
             temps.append(self.thermocouple.get())
-            time.sleep(0.01)
+            time.sleep(self.retry_time)
         good_reading = (temps[0] == temps[1] == temps[2])
         i = 0
         while (not good_reading) and (i < 10):
@@ -280,7 +282,7 @@ class TempSensorReal(TempSensor):
             temps.popleft()
             i += 1
             good_reading = (temps[0] == temps[1] == temps[2])
-            time.sleep(0.01)
+            time.sleep(self.retry_time)
         temp_prev = temps[-1]
         self.temperature = temp_prev
         log.info(f"Starting temp: {temp_prev:.1f} deg C")
@@ -288,23 +290,22 @@ class TempSensorReal(TempSensor):
         while True:
             try:
                 temp_new = self.thermocouple.get()
-                good_reading = (abs(temp_new - temp_prev) <= 3)
+                good_reading = (abs(temp_new - temp_prev) <= self.dT_limit)
                 i = 0
                 while (not good_reading) and (i < 5):
                     log.info("Suspect thermocouple reading...re-reading.")
-                    time.sleep(0.01)
+                    time.sleep(self.retry_time)
                     temp_new = self.thermocouple.get()
                     log.info(f"New temp: {temp_new:.1f} deg C, Previous temp: {temp_prev:.1f} deg C")
-                    good_reading = (abs(temp_new - temp_prev) <= 3)
+                    good_reading = (abs(temp_new - temp_prev) <= self.dT_limit)
                     i += 1
                 if not good_reading:
                     log.info("No good reading found, using new reading.")
                 temp_prev = self.temperature
                 self.temperature = temp_new
-
             except Exception:
                 log.exception("Problem reading temp")
-            time.sleep(self.time_step)
+            time.sleep(self.time_step-i*self.retry_time)
 
 
 class TempSensorSimulate(TempSensor):
